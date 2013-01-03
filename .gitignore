@@ -162,5 +162,9 @@ pip-log.txt
 # Mac crap
 .DS_Store
 
-# Must not be committed
+# Must not be committed because of licensing restrictions
 Microsoft.Web.Administration.dll
+
+# Output
+Install/*
+NugetPackages/*
