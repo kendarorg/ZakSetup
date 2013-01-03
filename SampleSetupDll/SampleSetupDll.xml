@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<root>
+	<dlls/>
+	<configs/>
+	<templates/>
+	<baseTemplates/>
+	<workflow>
+		<stepsample value="${SampleSetupDll.Value}"/>
+	</workflow>
+</root>

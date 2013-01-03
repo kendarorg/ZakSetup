@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<root>
+	<dlls>
+		<dll name="SampleSetupDll.dll" location="Plugins/SampleSetupDll"/>
+	</dlls>
+	<configs/>
+	<templates/>
+	<baseTemplates/>
+	<workflow>
+		<copy from="${SourcePath}" to="${DestinationPath}" what="*.dll;*.exe;*.bat"/>
+		<ask applyOn="${SampleSetupDll.Value}" help="What do you want to say"/>
+		<tell value="${DestinationPath}\WindowsService.exe" applyOn="${ServiceInstallation.ServiceExecutablePath}"/>
+		<include include="res:SampleSetupDll.xml"/>
+		<include include="res:ServiceInstallation.xml"/>
+	</workflow>
+</root>

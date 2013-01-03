@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{5B0207E6-611D-45CA-848F-E150DB2ED369}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NugetPackager</RootNamespace>
+    <AssemblyName>NugetPackager</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="CoreNugetPackager.nuspec" />
+    <None Include="CoreNugetPackager.tools\Init.ps1" />
+    <None Include="CoreNugetPackager.tools\Install.ps1" />
+    <None Include="CoreNugetPackager.tools\Uninstall.ps1" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zak.Setup.CleanUp\Zak.Setup.CleanUp.csproj">
+      <Project>{9D57AEA1-4080-427F-AE90-B71EEEF111B0}</Project>
+      <Name>Zak.Setup.CleanUp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Commons\Zak.Setup.Commons.csproj">
+      <Project>{98EDE16F-E38D-42B2-BFAC-E3489C4ECC1F}</Project>
+      <Name>Zak.Setup.Commons</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Core\Zak.Setup.Core.csproj">
+      <Project>{E3712B53-607B-4AB1-BEA6-518F6D52A461}</Project>
+      <Name>Zak.Setup.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Interfaces\Zak.Setup.Interfaces.csproj">
+      <Project>{05187396-B99C-4AE8-8416-CB1C0B01307B}</Project>
+      <Name>Zak.Setup.Interfaces</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Packager\Zak.Setup.Packager.csproj">
+      <Project>{1D6E6912-9447-4230-A7D6-B946C46CCB09}</Project>
+      <Name>Zak.Setup.Packager</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Runner\Zak.Setup.Runner.csproj">
+      <Project>{6BC81DDC-3B2A-454F-B988-AA3A34B1D75F}</Project>
+      <Name>Zak.Setup.Runner</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup\Zak.Setup.csproj">
+      <Project>{45362B94-13EF-4D9F-A071-DF1E870829CD}</Project>
+      <Name>Zak.Setup</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Ionic.Zip">
+      <HintPath>..\packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>mkdir  "$(SolutionDir)NugetPackages"
+$(SolutionDir).nuget\nuget pack "$(ProjectDir)CoreNugetPackager.nuspec" -OutputDirectory "$(SolutionDir)NugetPackages" -Prop "Configuration=$(ConfigurationName);Platform=$(PlatformName)"</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

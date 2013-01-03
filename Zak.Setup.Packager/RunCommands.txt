@@ -1,0 +1,22 @@
+ConsoleApplication Post Build Step:
+=======================================================
+SET APPLICATION_PATH=$(SolutionDir)Install\SetupSampleApp\ConsoleApplication
+SET SETUP_CORE=$(SolutionDir)Install\SetupCore
+SET SERVICES=Services;BatchRunner
+SET OUTCOME=$(SolutionDir)Install\ConsoleAppSetup.exe
+SET SCRIPT=%APPLICATION_PATH%\setup.xml
+SET PACKAGER=%SETUP_CORE%\Packager\Zak.Setup.Packager.exe
+
+mkdir $(SolutionDir)Install
+mkdir $(SolutionDir)Install\SetupSampleApp
+mkdir $(SolutionDir)Install\SetupSampleApp\ConsoleApplication
+
+copy $(TargetDir)*.dll %APPLICATION_PATH%\ /Y
+copy $(TargetDir)ConsoleApplication.exe %APPLICATION_PATH% /Y
+copy $(TargetDir)*.config %APPLICATION_PATH% /Y
+copy $(TargetDir)setup.xml %APPLICATION_PATH% /Y
+copy $(TargetDir)*.bat $(SolutionDir)Install /Y
+copy $(TargetDir)UninstallConsoleApplication.bat %APPLICATION_PATH% /Y
+
+%PACKAGER% -setup %SETUP_CORE% -plugins %SERVICES% -application %APPLICATION_PATH% -outcome %OUTCOME% -script %SCRIPT%
+

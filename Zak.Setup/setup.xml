@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<root>
+	<dlls>
+		<dll location=""/>
+	</dlls>
+	<configs>
+		<config key="Roles">
+			<available value="Receiver"/>
+			<available value="Sender"/>
+			<available value="SenderReceiver" help="Sender and receiver"/>
+		</config>
+		<config key="BusImplementations" type="template">
+			<available value="AzureServiceBusTemplate" help="Azure service bus">
+				<ask applyOn="${ServiceBusConnectionString}"
+								 value="Endpoint=sb://d3sr01.servicebus.windows.net/;SharedSecretIssuer=owner;SharedSecretValue=6ndrp7SrMgWbAtSf+ai22T6SSOTLnuWDmpT3mz727os="
+								 help="Azure bus service connection string"/>
+			</available>
+		</config>
+		<config key="WatcherImplementations" type="template" allownone="true">
+			<available value="WindowsFileWatcherTemplate" help="Windows file watcher">
+				<ask applyOn="${WatcherRoot}" value="${FileRoot}" help="The directory that will be watched"/>
+			</available>
+		</config>
+	</configs>
+	<templates>
+		<template id="AzureServiceBusTemplate">
+			<![CDATA[
+			<component
+					id="BusService"
+					service="Zak.VSM.Core.Bus.IBusService, Zak.VSM.Core.Interfaces"
+					type="Zak.VSM.Azure.BusService.AzureBusService, Zak.VSM.Azure.BusService"
+					lifestyle="singleton">
+				<parameters>
+					<topic>${Topic}</topic>
+					<connectionString>${ServiceBusConnectionString}</connectionString>
+				</parameters>
+			</component>
+			]]>
+		</template>
+		<template id="WindowsFileWatcherTemplate">
+			<![CDATA[
+			<component
+				id="FileWatcherService"
+				service="Zak.VSM.Core.FileWatcher.IFileWatcherService, Zak.VSM.Core.Interfaces"
+				type="Zak.VSM.WindowsFileWatcher.WindowsFileWatcherService, Zak.VSM.WindowsFileWatcher"
+				lifestyle="singleton">
+				<parameters>
+					<root>${WatcherRoot}</root>
+				</parameters>
+			</component>]]>
+		</template>
+	</templates>
+	<baseTemplates>
+		<baseTemplate id="log4netConfig" templateFile="setupTemplateLog4net.config"  isXml="true"/>
+		<baseTemplate id="windowsServiceConfig" isXml="true"
+			>
+			<![CDATA[
+		<?xml version="1.0"?>
+		<configuration>
+			<configSections>
+				<section name="castle" type="Castle.Windsor.Configuration.AppDomain.CastleSectionHandler, Castle.Windsor" />
+			</configSections>
+			<appSettings>
+				<!-- Can be one of: Receiver, Sender, SenderAndReceiver -->
+				<add key="Role" value="${Role}" />
+			</appSettings>
+			<castle>
+				<components>
+					<!-- BUS SERVICE -->
+					${BusService}
+					<!-- LOCAL STORAGE SERVICE -->
+					<component
+							id="LocalStorageService"
+							service="Zak.VSM.Core.Storage.IStorageService, Zak.VSM.Core.Interfaces"
+							type="Zak.VSM.WindowsFileStorage.WindowsFileStorageService, Zak.VSM.WindowsFileStorage"
+							lifestyle="singleton">
+						<parameters>
+							<root>${FileRoot}</root>
+						</parameters>
+					</component>
+					<!-- REMOTE STORAGE SERVICE -->
+					<component
+						id="RemoteStorageService"
+						service="Zak.VSM.Core.Storage.IStorageService, Zak.VSM.Core.Interfaces"
+						type="Zak.VSM.Azure.Storage.AzureBlobStorageService, Zak.VSM.Azure.Storage"
+						lifestyle="singleton">
+						<parameters>
+							<root>${BlobRoot}</root>
+							<connectionString>${StorageConnectionString}</connectionString>
+						</parameters>
+					</component>
+					<!-- FILE WATCHER SERVICE -->
+					${FileWatcherService}
+				</components>
+			</castle>
+			<runtime>
+				<assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+					<dependentAssembly>
+						<assemblyIdentity name="Microsoft.ServiceBus" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+						<bindingRedirect oldVersion="0.0.0.0-1.8.0.0" newVersion="1.8.0.0" />
+					</dependentAssembly>
+				</assemblyBinding>
+			</runtime>
+		</configuration>
+		]]>
+		</baseTemplate>
+	</baseTemplates>
+	<workflow>
+		<!--dowhile value="${Continue}" is="true">
+			<ask for="YesNo" applyOn="${Continue}" help="Continue doing?"/>
+		</dowhile-->
+		<ask for="Roles" applyOn="${Role}" help="Choose the role"/>
+		<ask applyOn="${DestinationPath}"
+								 value="C:\Zak\${Role}"
+								 help="Destination directory"/>
+		<if value="${Role}" is="Receiver">
+			<tell value="" applyOn="${FileWatcherService}"/>
+		</if>
+		<ask applyOn="${ServiceInstallation.ServiceName}" help="Choose the service name"/>
+		<tell value="${DestinationDirectory}\Zak.VSM.WinService.exe" applyOn="${ServiceInstallation.ServiceExecutablePath}"/>
+		<copy from="..\..\..\Zak.VSM.WinService\bin\${Build}" to="${DestinationDirectory}" what="*.dll;*.exe"/>
+		<ask for="BusImplementations" applyOn="${BusService}" help="Choose the bus implementation">
+			<ask applyOn="${Topic}" value="winservicetopic" help="Choose the topic"/>
+		</ask>
+		<ask applyOn="${FileRoot}" value="C:\source" help="Choose the local directory"/>
+		<!--<ask applyOn="${StorageConnectionString}"
+								 value="DefaultEndpointsProtocol=https;AccountName=portalvhds60s7g1bw4smdj;AccountKey=HTiDMjV3Syv/vcZfIaNq3jiyM/KFEAkw68uumTLH7en2MFMjYHAQ4WbQuSfcDscHjuei13ull1zW/1XGYYKTCg=="
+								 help="Azure blob storage connection string"/>-->
+		<ask applyOn="${StorageConnectionString}"
+							 value="UseDevelopmentStorage=true"
+							 help="Azure blob storage connection string"/>
+		<ask applyOn="${BlobRoot}" value="blobroot" help="Storage identifier of this service"/>
+		<if value="${Role}" is="Sender">
+			<ask for="WatcherImplementations" applyOn="${FileWatcherService}" help="Choose the file watcher"/>
+		</if>
+		<if value="${Role}" is="SenderReceiver">
+			<ask for="WatcherImplementations" applyOn="${FileWatcherService}" help="Choose the file watcher"/>
+		</if>
+		<writeTemplate template="log4netConfig" to="${DestinationDirectory}\log4net.config" />
+		<writeTemplate template="windowsServiceConfig" to="${DestinationDirectory}\Zak.VSM.WinService.exe.config"/>
+		<ask for="YesNo" applyOn="${ServiceInstallation.ShouldInstallService}" help="Do you want to install the service?"/>
+		<if value="${ServiceInstallation.ShouldInstallService}" is="true" include="res:ServiceInstallation.xml"/>
+	</workflow>
+</root>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+	<metadata>
+		<id>Zak.Setup.Services</id>
+		<version>1.0.0.0</version>
+		<title />
+		<authors>Enrico Da Ros</authors>
+		<owners>Enrico Da Ros</owners>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>Plugin to install services</description>
+		<dependencies>
+			<group targetFramework=".NETFramework4.0">
+				<dependency id="Zak.Setup.Core.Setup" version="1.0.0.0" />
+			</group>
+		</dependencies>
+	</metadata>
+	<files>
+		<file src="Zak.Setup.tools\**" target="tools" />
+		<file src="bin\$configuration$\Zak.Setup.Services.dll" target="content\..\bin\Plugins\Services\Zak.Setup.Services.dll" />
+	</files>
+</package>

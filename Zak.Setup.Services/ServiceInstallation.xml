@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<root>
+	<plugins>
+		<plugin short="install" class="Zak.VSM.Setup.ServicesInstallation.ServiceInstallerStep" dll="" dependencies=""/>
+	</plugins>
+	<configs>
+		<config key="ServiceInstallation.ServiceRolesAvailable">
+			<available value="LocalService"/>
+			<available value="LocalSystem"/>
+			<available value="NetworkService"/>
+			<available value="User"/>
+		</config>
+		<config key="ServiceInstallation.StartupsAvailable">
+			<available value="Manual"/>
+			<available value="AutoStart"/>
+		</config>
+	</configs>
+	<workflow>
+		<if value="${ServiceInstallation.ServiceName}">
+			<ask applyOn="${ServiceInstallation.ServiceName}" help="Choose the service name"/>
+		</if>
+		<if value="${ServiceInstallation.ServiceExecutablePath}">
+			<ask applyOn="${ServiceInstallation.ServiceExecutablePath}" help="Choose the service executable path"/>
+		</if>
+		<ask for="ServiceInstallation.ServiceRolesAvailable" applyOn="${ServiceInstallation.ServiceRole}" help="Choose the role to run the service with"/>
+		<ask for="ServiceInstallation.StartupsAvailable" applyOn="${ServiceInstallation.Startup}" help="Choose the startup type"/>
+		<ask for="YesNo" applyOn="${ServiceInstallation.StartOnCompletion}" help="Should the service start after the installation"/>
+		<if value="${ServiceInstallation.ServiceRole}" is="User">
+			<ask value="None" applyOn="${ServiceInstallation.UserName}" help="Choose the user name"/>
+			<ask value="None" applyOn="${ServiceInstallation.Password}" help="Choose the user password"/>
+		</if>
+		<serviceInstaller name="${ServiceInstallation.ServiceName}">
+			<param name="Startup" value="${ServiceInstallation.Startup}"/>
+			<param name="StartOnCompletion" value="${ServiceInstallation.StartOnCompletion}"/>
+			<param name="Role" value="${ServiceInstallation.ServiceRole}"/>
+			<param name="User" value="${ServiceInstallation.UserName}"/>
+			<param name="Password" value="${ServiceInstallation.Password}"/>
+			<!-- These can be set by the caller-->
+			<param name="Executable" value="${ServiceInstallation.ServiceExecutablePath}"/>
+			<param name="ServiceName" value="${ServiceInstallation.ServiceName}"/>
+			<!-- These must be set by the caller-->
+			<param name="AdditionalParameter" value="${ServiceInstallation.AdditionalParams[]}"/>
+		</serviceInstaller>
+	</workflow>
+</root>
