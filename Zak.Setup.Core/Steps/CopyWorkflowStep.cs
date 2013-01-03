@@ -17,6 +17,13 @@ namespace Zak.Setup.Core.Steps
 			To = null;
 			What = "*.*";
 		}
+
+
+		public override void Verify()
+		{
+
+		}
+
 		public string From { get; set; }
 		public string To { get; set; }
 		public string What { get; set; }

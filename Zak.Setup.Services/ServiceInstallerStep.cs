@@ -7,6 +7,13 @@ namespace Zak.Setup.Services
 	[Serializable]
 	public class ServiceInstallerStep : SingleWorkflowStep
 	{
+		public override bool NeedAdminRights { get { return true; } }
+		private string _displayName;
+		private string _fileName;
+		private string _user;
+		private string _role;
+		private string _password;
+		private ServiceBootFlag _startType;
 		public string Name { get; set; }
 
 		public override string GetNodeType()
@@ -19,44 +26,52 @@ namespace Zak.Setup.Services
 			return new ServiceUninstallerStep {Name = Name};
 		}
 
-		public override bool Execute(ref string template)
+		public override void Verify()
 		{
 			var pars = ParamStep.GetParameters(this);
 			var si = new ServiceInstaller();
-			string serviceName = _setupFile.GetKey(Name);
+			Name = _setupFile.GetKey(Name);
+	
+			_displayName = GetIfExists(pars, "servicename");
+			_fileName = GetIfExists(pars, "executable");
+			_user = GetIfExists(pars, "user");
+			_role = GetIfExists(pars, "role");
+			if (_role == "LocalService")
+			{
+				_user = "NT AUTHORITY\\LocalService";
+			}
+			else if (_role == "NetworkService")
+			{
+				_user = "NT AUTHORITY\\NetworkService";
+			}
+			else if (_role == "LocalSystem")
+			{
+				_user = null;
+			}
+			_password = GetIfExists(pars, "password");
+
+			_startType = ServiceBootFlag.Manual;
+			if (!ServiceBootFlag.TryParse(GetIfExists(pars, "password"), out _startType))
+			{
+				_startType = ServiceBootFlag.Manual;
+			}
+
+			si.Verify(Name, _displayName, _fileName, _user, _password, _startType);
+		}
+
+		public override bool Execute(ref string template)
+		{
+			var si = new ServiceInstaller();
+			
 			try
 			{
-				string displayName = GetIfExists(pars, "servicename");
-				string fileName = GetIfExists(pars, "executable");
-				string user = GetIfExists(pars, "user");
-				string role = GetIfExists(pars, "role");
-				if (role == "LocalService")
-				{
-					user = "NT AUTHORITY\\LocalService";
-				}
-				else if (role == "NetworkService")
-				{
-					user = "NT AUTHORITY\\NetworkService";
-				}
-				else if (role == "LocalSystem")
-				{
-					user = null;
-				}
-				string password = GetIfExists(pars, "password");
-				
-				ServiceBootFlag startType;
-				if (!ServiceBootFlag.TryParse(GetIfExists(pars, "password"), out startType))
-				{
-					startType = ServiceBootFlag.Manual;
-				}
-
-				si.Install(serviceName, displayName, fileName, user, password, startType);
+				si.Install(Name, _displayName, _fileName, _user, _password, _startType);
 				return true;
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine(ex);
-				si.Uninstall(serviceName);
+				si.Uninstall(Name);
 				return false;
 			}
 		}

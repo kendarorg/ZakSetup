@@ -16,6 +16,12 @@ namespace Zak.Setup.Core.Steps
 			From = null;
 		}
 
+
+		public override void Verify()
+		{
+
+		}
+
 		public override bool Execute(ref string template)
 		{
 			var from = DoAllReplaces(From);

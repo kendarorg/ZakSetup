@@ -22,6 +22,8 @@ namespace Zak.Setup.Core.Steps
 			Value = null;
 		}
 
+		public override void Verify() { }
+
 		public string For { get; set; }
 		public string ApplyOn { get; set; }
 		public string Value { get; set; }

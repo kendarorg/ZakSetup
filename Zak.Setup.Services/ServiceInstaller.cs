@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Threading;
 #if USE_TRANSACTED_INSTALLER
 using System.Collections;
@@ -72,7 +73,8 @@ namespace Zak.Setup.Services
 	{
 		//private const int STANDARD_RIGHTS_REQUIRED = 0xF0000;
 		private const int SERVICE_WIN32_OWN_PROCESS = 0x00000010;
-
+		private const int ERROR_ACCESS_DENIED = 5;
+		private const int ERROR_NO_TOKEN = 1008;
 #pragma warning disable 169
 		// ReSharper disable ConvertToConstant.Local
 		[StructLayout(LayoutKind.Sequential)]
@@ -186,7 +188,16 @@ namespace Zak.Setup.Services
 			IntPtr scm = OpenScManager(ScmAccessRights.AllAccess);
 			try
 			{
-				IntPtr service = OpenService(scm, serviceName, ServiceAccessRights.AllAccess);
+				if (scm == IntPtr.Zero)
+				{
+					var lastError = Marshal.GetLastWin32Error();
+					if (lastError == ERROR_ACCESS_DENIED)
+					{
+						throw new AuthenticationException("Failed to install service.");
+					}
+				}
+				
+			IntPtr service = OpenService(scm, serviceName, ServiceAccessRights.AllAccess);
 
 				try
 				{
@@ -216,6 +227,11 @@ namespace Zak.Setup.Services
 					service = CreateService(scm, serviceName, displayName, ServiceAccessRights.AllAccess,
 						SERVICE_WIN32_OWN_PROCESS, startType, ServiceError.Normal, fileName, null, IntPtr.Zero, null, user, password);
 
+				var lastError = Marshal.GetLastWin32Error();
+				if (lastError == ERROR_ACCESS_DENIED)
+				{
+					throw new AuthenticationException("Failed to install service.");
+				}
 				if (service == IntPtr.Zero)
 					throw new ApplicationException("Failed to install service.");
 
@@ -380,6 +396,41 @@ namespace Zak.Setup.Services
 				throw new ApplicationException("Could not connect to service control manager.");
 
 			return scm;
+		}
+
+		public void Verify(string serviceName, string displayName, string fileName, string user, string password, ServiceBootFlag startType)
+		{
+			IntPtr scm = IntPtr.Zero;
+			try
+			{
+				scm = OpenScManager(ScmAccessRights.AllAccess);
+			}
+			catch
+			{
+				var lastError = Marshal.GetLastWin32Error();
+				if (lastError == ERROR_ACCESS_DENIED || lastError == ERROR_NO_TOKEN)
+				{
+					throw new AuthenticationException(string.Format("Error code: {0}", lastError));
+				}
+				throw new NotSupportedException(string.Format("Error code: {0}", lastError));
+			}
+
+			try
+			{
+				if (scm == IntPtr.Zero)
+				{
+					var lastError = Marshal.GetLastWin32Error();
+					if (lastError == ERROR_ACCESS_DENIED || lastError == ERROR_NO_TOKEN)
+					{
+						throw new AuthenticationException(string.Format("Error code: {0}", lastError));
+					}
+					throw new NotSupportedException(string.Format("Error code: {0}", lastError));
+				}
+			}
+			finally
+			{
+				CloseServiceHandle(scm);
+			}
 		}
 	}
 

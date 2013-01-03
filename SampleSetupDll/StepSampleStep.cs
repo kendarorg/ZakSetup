@@ -6,6 +6,7 @@ namespace SampleSetupDll
 	[Serializable]
 	public class StepSampleStep : SingleWorkflowStep
 	{
+		public override void Verify() { }
 		public string Value { get; set; }
 		public override string GetNodeType()
 		{

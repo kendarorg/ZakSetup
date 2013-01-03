@@ -1,6 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net.Mime;
+using System.Reflection;
+using System.Threading;
 
 namespace Zak.Setup.Commons
 {
@@ -11,7 +15,7 @@ namespace Zak.Setup.Commons
 		private readonly Dictionary<string, string> _commandLineValues;
 		private static Dictionary<string, string> _kvps;
 
-		public string Help {get { return _helpMessage; }}
+		public string Help { get { return _helpMessage; } }
 
 		private static readonly object _lockObject = new object();
 
@@ -48,7 +52,7 @@ namespace Zak.Setup.Commons
 			return null;
 		}
 
-		public static void SetEnv(string envVar,string val)
+		public static void SetEnv(string envVar, string val)
 		{
 			envVar = envVar.ToLowerInvariant();
 			InitializeEnvironmentVariables();
@@ -175,6 +179,42 @@ namespace Zak.Setup.Commons
 			Console.WriteLine(_helpMessage);
 			Console.ReadKey();
 			Environment.Exit(0);
+		}
+
+		public void RunAsAdmin()
+		{
+			var pars = new List<string>();
+			foreach (var cpItem in _commandLineValues)
+			{
+				if (cpItem.Key.ToLowerInvariant() != "runas")
+				{
+					if (cpItem.Value != null)
+					{
+						pars.Add(string.Format("-{0} \"{1}\"", cpItem.Key, cpItem.Value));
+					}
+					else
+					{
+						pars.Add(string.Format("-{0}", cpItem.Key));
+					}
+				}
+			}
+
+			var proc = new ProcessStartInfo
+				{
+					UseShellExecute = true,
+					WorkingDirectory = Environment.CurrentDirectory,
+					FileName = Assembly.GetEntryAssembly().Location,
+					Arguments = string.Join(" ",pars.ToArray())
+				};
+
+
+
+			proc.Verb = "runas";
+			var process = Process.Start(proc);
+			while (!process.WaitForExit(100))
+			{
+				Thread.Sleep(100);
+			}
 		}
 	}
 }

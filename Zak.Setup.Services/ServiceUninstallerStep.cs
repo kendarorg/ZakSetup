@@ -6,11 +6,17 @@ namespace Zak.Setup.Services
 	[Serializable]
 	public class ServiceUninstallerStep : SingleWorkflowStep
 	{
+		public override bool NeedAdminRights { get { return true; } }
 		public string Name { get; set; }
 
 		public override string GetNodeType()
 		{
 			return "serviceuninstaller";
+		}
+
+		public override void Verify()
+		{
+			
 		}
 
 		public override bool Execute(ref string template)
@@ -24,7 +30,11 @@ namespace Zak.Setup.Services
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex);
+				if (!_setupFile.Undoing)
+				{
+					Console.WriteLine(ex);	
+				}
+				
 				return false;
 			}
 		}

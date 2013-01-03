@@ -11,7 +11,7 @@ namespace Zak.Setup.Core.Steps
 		{
 			return "if";
 		}
-		
+		public override void Verify() { }
 		public string Value { get; set; }
 		public string Is { get; set; }
 		public bool MustBeTrue { get; set; }

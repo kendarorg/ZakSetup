@@ -16,5 +16,6 @@ namespace Zak.Setup.Setup
 		SingleWorkflowStep WorkflowRoot { get; set; }
 		List<SingleWorkflowStep> Rollback { get; set; }
 		bool Unattended { get; set; }
+		bool Undoing { get; }
 	}
 }

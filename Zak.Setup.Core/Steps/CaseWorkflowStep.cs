@@ -7,6 +7,7 @@ namespace Zak.Setup.Core.Steps
 	public class CaseWorkflowStep : SingleWorkflowStep
 	{
 		public string Value { get; set; }
+		public override void Verify() { }
 
 		public override string GetNodeType()
 		{

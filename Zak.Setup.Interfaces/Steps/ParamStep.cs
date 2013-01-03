@@ -9,6 +9,8 @@ namespace Zak.Setup.Steps
 		public string Value { get; set; }
 		public string Name { get; set; }
 
+		public override void Verify(){}
+
 		public override string GetNodeType()
 		{
 			return "param";

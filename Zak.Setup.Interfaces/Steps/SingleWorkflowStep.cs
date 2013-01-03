@@ -10,6 +10,8 @@ namespace Zak.Setup.Steps
 		public const string TEMPLATE_VALUE = "_TEMPLATE_VALUE_";
 		protected static ISetupFile _setupFile;
 
+		public virtual bool NeedAdminRights { get { return false; } }
+
 		protected SingleWorkflowStep()
 		{
 			WorkflowSteps = new List<SingleWorkflowStep>();
@@ -46,11 +48,14 @@ namespace Zak.Setup.Steps
 			foreach (var workflowStep in workflowSteps)
 			{
 				ShowElementHelp(workflowStep);
+				workflowStep.Verify();
 				_setupFile.AddUndo(workflowStep.Undo());
 				workflowStep.Execute(ref template);
 				workflowStep.RunSteps(workflowStep.WorkflowSteps, ref template);
 			}
 		}
+
+		public abstract void Verify();
 
 
 		public static void ShowElementHelp(SetupWithHelp workflowStep, string alternateContent = null)

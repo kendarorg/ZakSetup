@@ -11,6 +11,8 @@ namespace Zak.Setup.Core.Steps
 			return "root";
 		}
 
+		public override void Verify() { }
+
 		public override bool Execute(ref string template)
 		{
 			RunSteps(WorkflowSteps,ref template);

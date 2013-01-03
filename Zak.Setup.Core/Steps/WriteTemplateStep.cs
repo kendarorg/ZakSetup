@@ -18,6 +18,13 @@ namespace Zak.Setup.Core.Steps
 			Template = null;
 			To = null;
 		}
+
+
+		public override void Verify()
+		{
+
+		}
+
 		public string Template { get; set; }
 		public string To { get; set; }
 

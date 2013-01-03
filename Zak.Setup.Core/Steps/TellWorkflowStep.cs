@@ -11,6 +11,8 @@ namespace Zak.Setup.Core.Steps
 		{
 			return "tell";
 		}
+		public override void Verify() { }
+
 		public TellWorkflowStep()
 		{
 			ApplyOn = null;

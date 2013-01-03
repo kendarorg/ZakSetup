@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Authentication;
 using Zak.Setup.Commons;
 using Zak.Setup.Steps;
 
@@ -28,6 +29,14 @@ namespace Zak.Setup.Core.Setup
 			_setupFile.Undoing = true;
 			_setupFile.Unattended = unattended;
 			Console.WriteLine("Uninstall started.");
+
+			/*for (int i = (_setupFile.Rollback.Count - 1); i >= 0; i--)
+			{
+				if (_setupFile.Rollback[i].NeedAdminRights)
+				{
+					throw new AuthenticationException();
+				}
+			}*/
 			for (int i = (_setupFile.Rollback.Count - 1); i >= 0; i--)
 			{
 				SingleWorkflowStep.ShowElementHelp(_setupFile.Rollback[i]);
@@ -40,6 +49,7 @@ namespace Zak.Setup.Core.Setup
 		}
 
 		public static bool Start(string templatePath, string destinationPath, string pluginDirs, bool unattended, 
+			ref bool asAdministrator,
 			string rollBackPath = null, string sourcePath=null)
 		{
 			_destinationPath = destinationPath.TrimEnd(Path.DirectorySeparatorChar);
@@ -59,7 +69,7 @@ namespace Zak.Setup.Core.Setup
 #else
 			_setupFile.SetKey("${Build}", "Release");
 #endif
-			return RunSetup(rollBackPath);
+			return RunSetup(rollBackPath,ref asAdministrator);
 		
 		}
 
@@ -70,7 +80,7 @@ namespace Zak.Setup.Core.Setup
 		#region Run setup region
 
 
-		private static bool RunSetup(string rollBackPath)
+		private static bool RunSetup(string rollBackPath, ref bool asAdministrator)
 		{
 			string template = string.Empty;
 			try
@@ -78,7 +88,7 @@ namespace Zak.Setup.Core.Setup
 				Console.WriteLine("Setup started.");
 				_setupFile.WorkflowRoot.Execute(ref template);
 				Console.WriteLine("Setup completed.");
-				SerializeRollback(rollBackPath);
+				SerializeRollback(rollBackPath,ref asAdministrator);
 				return true;
 			}
 			catch (Exception ex)
@@ -98,8 +108,9 @@ namespace Zak.Setup.Core.Setup
 			return false;
 		}
 
-		private static void SerializeRollback(string rollBackPath)
+		private static void SerializeRollback(string rollBackPath, ref bool asAdministrator)
 		{
+			asAdministrator = false;
 			if (string.IsNullOrWhiteSpace(rollBackPath))
 			{
 				rollBackPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -108,6 +119,11 @@ namespace Zak.Setup.Core.Setup
 					throw new ArgumentException("Error writing undo");
 				}
 				rollBackPath = Path.Combine(rollBackPath, "undo.ser");
+			}
+
+			foreach (var step in _setupFile.Rollback)
+			{
+				if (step.NeedAdminRights) asAdministrator = true;
 			}
 			var binaryFormatter = new BinaryFormatter();
 			using (var writeStream = new FileStream(rollBackPath,FileMode.Create,FileAccess.Write,FileShare.None))

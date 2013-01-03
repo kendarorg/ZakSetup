@@ -62,8 +62,16 @@ Note that:
 
 		static void Main(string[] args)
 		{
+			
 			Console.ReadLine();
 			var commandParser = new CommandParser(args, HELP_MESSAGE);
+
+			if (commandParser.IsSet("runas"))
+			{
+				commandParser.RunAsAdmin();
+				return;
+			}
+
 			if (commandParser.Has("uninstall", "rollback", "installer"))
 			{
 
@@ -140,14 +148,15 @@ Note that:
 				{
 					sourcePath = commandParser["source"];
 				}
-
-				if (SetupLoader.Start(commandParser["template"], commandParser["destination"], pluginDirs, unattended, rollbackPath,
-															sourcePath))
+				bool asAdministrator = false;
+				if (SetupLoader.Start(commandParser["template"], commandParser["destination"], pluginDirs, unattended,ref asAdministrator, 
+															rollbackPath,sourcePath))
 				{
-					return CreateUninstaller(commandParser["destination"], rollbackPath, commandParser["setupName"], commandParser["mainapplication"]);
+					CreateUninstaller(commandParser["destination"], rollbackPath, commandParser["setupName"], 
+						commandParser["mainapplication"], asAdministrator);
 				}
 			}
-			return false;
+			return true;
 		}
 
 		[Flags]
@@ -216,7 +225,7 @@ Note that:
 		}
 
 
-		private static bool CreateUninstaller(string destination, string rollbackPath, string setupName, string mainapplication)
+		private static bool CreateUninstaller(string destination, string rollbackPath, string setupName, string mainapplication, bool asAdministrator)
 		{
 			using (RegistryKey parent = Registry.CurrentUser.OpenSubKey(
 									 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", true))
@@ -281,6 +290,10 @@ Note that:
 						var uninstallString = string.Format("{0} -uninstall -installer \"{1}\" -rollback \"{2}\" -plugins \"{3}\"" +
 							" -cleaner \"{4}\" -destination \"{5}\" -guid \"{6}\"",
 							setupPath, setupName, rollbackPath, pluginsPath, cleaner, destination, guidText);
+						if (asAdministrator == true)
+						{
+							uninstallString += " -runas ";
+						}
 						key.SetValue("UninstallString", uninstallString);
 					}
 					finally

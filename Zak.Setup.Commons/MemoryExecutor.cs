@@ -126,7 +126,11 @@ namespace Zak.Setup.Commons
 		private const ushort IMAGE_DOS_SIGNATURE = 0x5A4D; // MZ
 		private const uint IMAGE_NT_SIGNATURE = 0x00004550; // PE00
 
+// ReSharper disable InconsistentNaming
+#pragma warning disable 169
 		private static short SW_SHOW = 5;
+#pragma warning restore 169
+// ReSharper restore InconsistentNaming
 		private static short SW_HIDE = 0;
 		private const uint STARTF_USESTDHANDLES = 0x00000100;
 		private const uint STARTF_USESHOWWINDOW = 0x00000001;

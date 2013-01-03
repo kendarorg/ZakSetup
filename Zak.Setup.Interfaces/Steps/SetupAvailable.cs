@@ -9,6 +9,8 @@ namespace Zak.Setup.Steps
 		{
 			return null;
 		}
+		public override void Verify() { }
+
 		public SetupAvailable()
 		{
 			//Proposals = new List<AskTellStep>();
