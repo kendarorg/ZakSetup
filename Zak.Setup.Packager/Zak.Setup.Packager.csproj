@@ -87,6 +87,10 @@
       <Project>{98EDE16F-E38D-42B2-BFAC-E3489C4ECC1F}</Project>
       <Name>Zak.Setup.Commons</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Zak.Setup.Interfaces\Zak.Setup.Interfaces.csproj">
+      <Project>{05187396-B99C-4AE8-8416-CB1C0B01307B}</Project>
+      <Name>Zak.Setup.Interfaces</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="RunCommands.txt" />

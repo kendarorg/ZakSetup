@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using Zak.Setup.Commons;
 using System.IO;
 using Ionic.Zip;
 using System.Reflection;
+using Zak.Setup.Steps;
 
 namespace Zak.Setup.Packager
 {
@@ -22,41 +25,40 @@ namespace Zak.Setup.Packager
 		}
 
 		private const string HELP = "Help not present";
+		private static string _mtExePath = null;
 		static void Main(string[] args)
 		{
-			var cp = new CommandParser(args,HELP);
+			FileDescriptor temporaryManifestedExecutable = null;
+			var cp = new CommandParser(args, HELP);
 			if (cp.Has("setup", "application", "outcome", "script", "mainapplication"))
 			{
+				if (cp.IsSet("mt"))
+				{
+					_mtExePath = cp["mt"];
+				}
 				var starterScript = Path.GetFullPath(cp["script"]);
 				var setupDir = Path.GetFullPath(cp["setup"]);
 				var applicationDir = Path.GetFullPath(cp["application"]);
-				var applicationDirPlugins = Path.Combine(Path.GetFullPath(cp["application"]),"Plugins");
+				var applicationDirPlugins = Path.Combine(Path.GetFullPath(cp["application"]), "Plugins");
 				var outcomeFile = Path.GetFullPath(cp["outcome"]);
 				var setupCoreDir = Path.Combine(setupDir, "Core");
 				var setupPackagerDir = Path.Combine(setupDir, "Packager");
 				var setupRunnerDir = Path.Combine(setupDir, "Runner");
 				var setupPluginsDir = Path.Combine(setupDir, "Plugins");
 
-				var tmpPath =  Path.GetTempPath();
+				var tmpPath = Path.GetTempPath();
 				var tmpDirectory = Path.Combine(tmpPath, Guid.NewGuid().ToString());
 				Directory.CreateDirectory(tmpDirectory);
 
 				try
 				{
 					var filesToAdd = new List<FileDescriptor>();
-					filesToAdd.AddRange(SetupFileDescriptors(
-						applicationDir,
-						"application",
-						Directory.GetFiles(cp["application"], "*.*", SearchOption.AllDirectories)));
-
-					filesToAdd.AddRange(SetupFileDescriptors(
-						setupCoreDir,
-						"setup",
-						Directory.GetFiles(setupCoreDir, "*.*", SearchOption.AllDirectories)));
+					var pluginsDirs = new List<string>();
 
 					//Load application plugins
 					if (Directory.Exists(applicationDirPlugins))
 					{
+						pluginsDirs.Add(applicationDirPlugins);
 						var applicationPlugins = Directory.GetDirectories(applicationDirPlugins, "*.*", SearchOption.TopDirectoryOnly);
 
 						foreach (var singlePluginDir in applicationPlugins)
@@ -76,6 +78,7 @@ namespace Zak.Setup.Packager
 						foreach (var plugin in plugins)
 						{
 							var singlePluginDir = Path.Combine(setupPluginsDir, plugin);
+							pluginsDirs.Add(singlePluginDir);
 							filesToAdd.AddRange(SetupFileDescriptors(
 								singlePluginDir,
 								"plugins" + Path.DirectorySeparatorChar + plugin,
@@ -83,6 +86,25 @@ namespace Zak.Setup.Packager
 						}
 					}
 
+					var manifestNeeded = CheckManifestNeed(pluginsDirs);
+
+
+					filesToAdd.AddRange(SetupFileDescriptors(
+						applicationDir,
+						"application",
+						Directory.GetFiles(cp["application"], "*.*", SearchOption.AllDirectories)));
+
+					filesToAdd.AddRange(SetupFileDescriptors(
+						setupCoreDir,
+						"setup",
+						Directory.GetFiles(setupCoreDir, "*.*", SearchOption.AllDirectories)));
+
+					if (manifestNeeded > 0)
+					{
+						var removedSetup = RemoveSetupExeFromFileList(filesToAdd);
+						temporaryManifestedExecutable = AddNewManifestedSetupExe(removedSetup, filesToAdd, manifestNeeded);
+						filesToAdd.Add(temporaryManifestedExecutable);
+					}
 
 					var zipArchive = Path.Combine(tmpDirectory, "SetupContent.zip");
 					using (var zip = new ZipFile())
@@ -132,9 +154,52 @@ namespace Zak.Setup.Packager
 				finally
 				{
 					CleanUpDir(new DirectoryInfo(tmpDirectory));
+
+					if (temporaryManifestedExecutable != null)
+					{
+						File.Delete(temporaryManifestedExecutable.SourcePath);
+						File.Delete(temporaryManifestedExecutable.SourcePath+".Manifest");
+						Directory.Delete(Path.GetDirectoryName(temporaryManifestedExecutable.SourcePath));
+					}
+
 					Console.WriteLine("CleanedUp temporary files.");
 				}
 			}
+		}
+
+		private static FileDescriptor RemoveSetupExeFromFileList(List<FileDescriptor> filesToAdd)
+		{
+			for (int i = filesToAdd.Count - 1; i >= 0; i--)
+			{
+				var fileToAdd = filesToAdd[i];
+				if (fileToAdd.SourcePath.ToLowerInvariant().EndsWith("zak.setup.exe"))
+				{
+					filesToAdd.RemoveAt(i);
+					return fileToAdd;
+				}
+			}
+			return null;
+		}
+
+		private static int CheckManifestNeed(List<string> filesToAdd)
+		{
+			int level = 0;
+			foreach (var item in filesToAdd)
+			{
+				var loadedAssemblies = AssembliesManager.LoadAssembliesFrom(item);
+				foreach (var loadedAssembly in loadedAssemblies)
+				{
+					var loadedTypes = AssembliesManager.LoadTypesInheritingFrom(loadedAssembly, new Type[] { typeof(SingleWorkflowStep) });
+					foreach (var loadedType in loadedTypes)
+					{
+						var swf = (SingleWorkflowStep)Activator.CreateInstance(loadedType);
+						if (swf.NeedHighestAvailableRights && level == 0) level = 1;
+						if (swf.NeedAdminRights && level <= 1) level = 2;
+					}
+				}
+			}
+
+			return level;
 		}
 
 		private static void CleanUpDir(DirectoryInfo rootDirInfo)
@@ -151,7 +216,7 @@ namespace Zak.Setup.Packager
 			Directory.Delete(rootDirInfo.FullName);
 		}
 
-		private static IEnumerable<FileDescriptor> SetupFileDescriptors(string root,string extraZipDir,string[] getFiles)
+		private static IEnumerable<FileDescriptor> SetupFileDescriptors(string root, string extraZipDir, string[] getFiles)
 		{
 			var toret = new List<FileDescriptor>();
 			foreach (var singleFile in getFiles)
@@ -170,5 +235,60 @@ namespace Zak.Setup.Packager
 			}
 			return toret;
 		}
+
+		private static FileDescriptor AddNewManifestedSetupExe(FileDescriptor removedSetup, List<FileDescriptor> filesToAdd, int manifestNeeded)
+		{
+			var manifestString = "asInvoker";
+			if (manifestNeeded == 1) manifestString = "highestAvailable";
+			if (manifestNeeded == 2) manifestString = "requireAdministrator";
+#if DEBUG
+			Console.WriteLine("Required execution rights: {0}",manifestString);
+			var tmpPath = Path.Combine(@"C:\Projects\Zak.Setup\Install",Guid.NewGuid().ToString());// Path.GetTempPath();
+#else
+			var tmpPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+#endif
+
+
+			var fileName = Path.GetFileName(removedSetup.SourcePath);
+			Directory.CreateDirectory(tmpPath);
+			var tmpFileName = Path.Combine(tmpPath, fileName);
+			
+			var tmpFileNameManifest = Path.Combine(tmpPath, fileName + ".manifest");
+			File.Copy(removedSetup.SourcePath, tmpFileName);
+			
+			var tmpManifestContent = string.Format(TEMPLATE_FOR_MANIFEST, manifestString);
+			File.WriteAllText(tmpFileNameManifest, tmpManifestContent);
+			var startInfo = new ProcessStartInfo(Path.Combine(_mtExePath,"mt.exe"));
+			
+			startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+			
+			startInfo.Arguments = string.Format(@" -manifest ""{0}"" ", tmpFileNameManifest);
+			startInfo.Arguments += string.Format(@" -outputresource:""{0}"";#1 ", tmpFileName);
+			var process = Process.Start(startInfo);
+			
+			while (!process.WaitForExit(100))
+			{
+				Thread.Sleep(100);
+			}
+
+#if DEBUG
+			Console.WriteLine("Executing: {0} {1}", Path.Combine(_mtExePath, "mt.exe"), startInfo.Arguments);
+#endif
+
+			
+			removedSetup.SourcePath = tmpFileName;
+			return removedSetup;
+		}
+
+		private const string TEMPLATE_FOR_MANIFEST = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+    <assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">
+    <trustInfo xmlns=""urn:schemas-microsoft-com:asm.v3"">
+        <security>
+            <requestedPrivileges>
+                <requestedExecutionLevel level=""{0}"" uiAccess=""false""/>
+            </requestedPrivileges>
+        </security>
+    </trustInfo>
+</assembly>";
 	}
 }

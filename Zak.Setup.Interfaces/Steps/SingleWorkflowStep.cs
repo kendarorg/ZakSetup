@@ -11,6 +11,8 @@ namespace Zak.Setup.Steps
 		protected static ISetupFile _setupFile;
 
 		public virtual bool NeedAdminRights { get { return false; } }
+		public virtual bool NeedHighestAvailableRights { get { return false; } }
+		public virtual bool NeedUiAccess { get { return false; } }
 
 		protected SingleWorkflowStep()
 		{
