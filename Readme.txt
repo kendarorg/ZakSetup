@@ -50,9 +50,11 @@ REM Copy the configurations
 copy $(TargetDir)*.config %APPLICATION_PATH% /Y
 REM Copy the setup script
 copy %SCRIPT% %APPLICATION_PATH% /Y
+REM Set the path for the windows SDK mt.exe to add the correct manifest (for uac) to the setup executable generated
+SET MT_EXE_PATH=C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
 
 REM Run the packager!!
-%PACKAGER% -setup %SETUP_CORE% -application %APPLICATION_PATH% -outcome %OUTCOME% -script %SCRIPT% -mainapplication %MAIN_EXE_PATH%
+"%PACKAGER%" -setup "%SETUP_CORE%" -application "%APPLICATION_PATH%" -outcome "%OUTCOME%" -script "%SCRIPT%" -mainapplication "%MAIN_EXE_PATH%" -mt "%MT_EXE_PATH%"
 
 When willing to add plugins, the ones available at the moment are:
 ===================================================================
@@ -65,3 +67,5 @@ To use them while running the packager a flag should be added:
  -plugins Services;IIS6;AnotherPlugin
 
 The plugin naming convention use the last part of the plugin as plugin name!!
+
+Each plugin is able to detect if it will need administrative or elevated rights to run!

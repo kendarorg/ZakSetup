@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ConsoleApplication")]
 [assembly: AssemblyDescription("Simple console application")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Zak")]
+[assembly: AssemblyCompany("Kendar")]
 [assembly: AssemblyProduct("ConsoleApplication")]
-[assembly: AssemblyCopyright("Copyright © Zak 2012")]
+[assembly: AssemblyCopyright("Copyright © Kendar 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
